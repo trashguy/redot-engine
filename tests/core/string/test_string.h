@@ -1638,7 +1638,7 @@ TEST_CASE("[String] Path functions") {
 	static const char *base_name[8] = { "C:\\Redot\\project\\test", "/Redot/project/test", "../Redot/project/test", "Redot\\test", "C:\\test", "res://test", "user://test", "/" };
 	static const char *ext[8] = { "tscn", "xscn", "scn", "doc", "", "", "", "test" };
 	static const char *file[8] = { "test.tscn", "test.xscn", "test.scn", "test.doc", "test.", "test", "test", ".test" };
-	static const char *simplified[8] = { "C:/Redot/project/test.tscn", "/Redot/project/test.xscn", "Redot/project/test.scn", "Redot/test.doc", "C:/test.", "res://test", "user://test", "/.test" };
+	static const char *simplified[8] = { "C:/Redot/project/test.tscn", "/Redot/project/test.xscn", "../Redot/project/test.scn", "Redot/test.doc", "C:/test.", "res://test", "user://test", "/.test" };
 	static const bool abs[8] = { true, true, false, false, true, true, true, true };
 
 	for (int i = 0; i < 8; i++) {
