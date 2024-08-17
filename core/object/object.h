@@ -88,6 +88,9 @@ enum PropertyHint {
 	PROPERTY_HINT_HIDE_QUATERNION_EDIT, /// Only Node3D::transform should hide the quaternion editor.
 	PROPERTY_HINT_PASSWORD,
 	PROPERTY_HINT_LAYERS_AVOIDANCE,
+	PROPERTY_HINT_DICTIONARY_TYPE,
+	PROPERTY_HINT_TOOL_BUTTON,
+	PROPERTY_HINT_ONESHOT, ///< the property will be changed by self after setting, such as AudioStreamPlayer.playing, Particles.emitting.
 	PROPERTY_HINT_MAX,
 };
 
