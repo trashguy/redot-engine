@@ -113,6 +113,9 @@ void ViewportTexture::set_viewport_path_in_scene(const NodePath &p_path) {
 	if (get_local_scene() && !path.is_empty()) {
 		setup_local_to_scene();
 	} else {
+		if (path.is_empty()) {
+			vp_changed = false;
+		}
 		emit_changed();
 	}
 }
@@ -123,9 +126,7 @@ NodePath ViewportTexture::get_viewport_path_in_scene() const {
 
 int ViewportTexture::get_width() const {
 	if (!vp) {
-		if (!vp_pending) {
-			ERR_PRINT("Viewport Texture must be set to use it.");
-		}
+		_err_print_viewport_not_set();
 		return 0;
 	}
 	return vp->size.width;
@@ -133,9 +134,7 @@ int ViewportTexture::get_width() const {
 
 int ViewportTexture::get_height() const {
 	if (!vp) {
-		if (!vp_pending) {
-			ERR_PRINT("Viewport Texture must be set to use it.");
-		}
+		_err_print_viewport_not_set();
 		return 0;
 	}
 	return vp->size.height;
@@ -143,9 +142,7 @@ int ViewportTexture::get_height() const {
 
 Size2 ViewportTexture::get_size() const {
 	if (!vp) {
-		if (!vp_pending) {
-			ERR_PRINT("Viewport Texture must be set to use it.");
-		}
+		_err_print_viewport_not_set();
 		return Size2();
 	}
 	return vp->size;
@@ -165,12 +162,16 @@ bool ViewportTexture::has_alpha() const {
 
 Ref<Image> ViewportTexture::get_image() const {
 	if (!vp) {
-		if (!vp_pending) {
-			ERR_PRINT("Viewport Texture must be set to use it.");
-		}
+		_err_print_viewport_not_set();
 		return Ref<Image>();
 	}
 	return RS::get_singleton()->texture_2d_get(vp->texture_rid);
+}
+
+void ViewportTexture::_err_print_viewport_not_set() const {
+	if (!vp_pending && !vp_changed) {
+		ERR_PRINT("Viewport Texture must be set to use it.");
+	}
 }
 
 void ViewportTexture::_setup_local_to_scene(const Node *p_loc_scene) {
