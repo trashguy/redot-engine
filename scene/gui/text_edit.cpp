@@ -1600,7 +1600,9 @@ void TextEdit::_notification(int p_what) {
 				draw_caret = true;
 			}
 
-			_show_virtual_keyboard();
+			if (editable) {
+				_show_virtual_keyboard();
+			}
 		} break;
 
 		case NOTIFICATION_FOCUS_EXIT: {
@@ -1949,7 +1951,9 @@ void TextEdit::gui_input(const Ref<InputEvent> &p_gui_input) {
 				}
 			}
 
-			_show_virtual_keyboard();
+			if (editable) {
+				_show_virtual_keyboard();
+			}
 		}
 	}
 
