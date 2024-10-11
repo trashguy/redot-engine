@@ -370,7 +370,7 @@ public class GodotInputHandler implements InputManager.InputDeviceListener {
 		Collections.sort(joystick.axes);
 		for (int idx = 0; idx < joystick.axes.size(); idx++) {
 			//Helps with creating new joypad mappings.
-			Log.i(TAG, " - Mapping Android axis " + joystick.axes.get(idx) + " to Godot axis " + idx);
+			Log.i(TAG, " - Mapping Android axis " + joystick.axes.get(idx) + " to Redot axis " + idx);
 		}
 		mJoysticksDevices.put(deviceId, joystick);
 
