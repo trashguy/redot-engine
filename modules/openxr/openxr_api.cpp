@@ -5,6 +5,8 @@
 /*                             GODOT ENGINE                               */
 /*                        https://godotengine.org                         */
 /**************************************************************************/
+/* Copyright (c) 2024-present Redot Engine contributors                   */
+/*                                          (see REDOT_AUTHORS.md)        */
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
 /* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
 /*                                                                        */
@@ -523,7 +525,7 @@ bool OpenXRAPI::create_instance() {
 	XrApplicationInfo application_info{
 		"", // applicationName, we'll set this down below
 		1, // applicationVersion, we don't currently have this
-		"Godot Game Engine", // engineName
+		"Redot Game Engine", // engineName
 		VERSION_MAJOR * 10000 + VERSION_MINOR * 100 + VERSION_PATCH, // engineVersion 4.0 -> 40000, 4.0.1 -> 40001, 4.1 -> 40100, etc.
 		XR_CURRENT_API_VERSION // apiVersion
 	};
