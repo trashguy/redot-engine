@@ -111,7 +111,7 @@
 			Specific to the macOS platform.
 		</constant>
 		<constant name="NOTIFICATION_CRASH" value="2012">
-			Notification received from Godot's crash handler when the engine is about to crash.
+			Notification received from Redot's crash handler when the engine is about to crash.
 			Implemented on desktop platforms if the crash handler is enabled.
 		</constant>
 		<constant name="NOTIFICATION_OS_IME_UPDATE" value="2013">
