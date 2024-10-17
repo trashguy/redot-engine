@@ -335,7 +335,7 @@
 		</member>
 		<member name="editors/3d/navigation/navigation_scheme" type="int" setter="" getter="">
 			The navigation scheme to use in the 3D editor. Changing this setting will affect the mouse buttons that must be held down to perform certain operations in the 3D editor viewport.
-			- [b]Godot[/b] Middle mouse button to orbit, [kbd]Shift + Middle mouse button[/kbd] to pan. [kbd]Mouse wheel[/kbd] to zoom.
+			- [b]Redot[/b] Middle mouse button to orbit, [kbd]Shift + Middle mouse button[/kbd] to pan. [kbd]Mouse wheel[/kbd] to zoom.
 			- [b]Maya:[/b] [kbd]Alt + Left mouse button[/kbd] to orbit. [kbd]Middle mouse button[/kbd] to pan, [kbd]Shift + Middle mouse button[/kbd] to pan 10 times faster. [kbd]Mouse wheel[/kbd] to zoom.
 			- [b]Modo:[/b] [kbd]Alt + Left mouse button[/kbd] to orbit. [kbd]Alt + Shift + Left mouse button[/kbd] to pan. [kbd]Ctrl + Alt + Left mouse button[/kbd] to zoom.
 			See also [member editors/3d/freelook/freelook_navigation_scheme].
@@ -574,7 +574,7 @@
 			To enable this feature for your specific project, use [member ProjectSettings.filesystem/import/blender/enabled].
 		</member>
 		<member name="filesystem/import/blender/rpc_port" type="int" setter="" getter="">
-			The port number used for Remote Procedure Call (RPC) communication with Godot's created process of the blender executable.
+			The port number used for Remote Procedure Call (RPC) communication with Redot's created process of the blender executable.
 			Setting this to 0 effectively disables communication with Redot and the blender process, making performance slower.
 		</member>
 		<member name="filesystem/import/blender/rpc_server_uptime" type="float" setter="" getter="">
