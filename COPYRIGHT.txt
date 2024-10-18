@@ -48,18 +48,14 @@ Copyright: 2024-present, Redot Engine contributors
  2007-2014, Juan Linietsky, Ariel Manzur
 License: Expat
 
-Files: ./icon.png
- ./icon.svg
-Comment: Redot Engine Icons
-Copyright: 2024, dev_airsyad (on X/Twitter)
-License: CC-BY-4.0
-
 Files: ./logo.png
  ./logo.svg
  ./logo_outlined.png
  ./logo_outlined.svg
  ./editor/icons/TitleBarLogo.svg
-Comment: Redot Engine Logos
+ ./icon.png
+ ./icon.svg
+Comment: Redot Engine Logos and Icons
 Copyright: 2024, Asrorul Irsyad
 License: CC-BY-4.0
 
