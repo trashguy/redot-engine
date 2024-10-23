@@ -4,17 +4,17 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <Description>MSBuild .NET Sdk for Redot projects.</Description>
-    <Authors>Redot Engine contributors</Authors>
+    <Authors>Godot Engine contributors;Redot Engine contributors</Authors>
 
     <PackageId>Godot.NET.Sdk</PackageId>
-    <Version>4.3.1</Version>
+    <Version>4.3.0</Version>
     <PackageVersion>$(PackageVersion_Godot_NET_Sdk)</PackageVersion>
-    <RepositoryUrl>https://github.com/godotengine/godot/tree/master/modules/mono/editor/Godot.NET.Sdk</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Redot-Engine/redot-engine/tree/master/modules/mono/editor/Godot.NET.Sdk</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageType>MSBuildSdk</PackageType>
     <PackageTags>MSBuildSdk</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Copyright>Copyright (c) Godot Engine contributors</Copyright>
+    <Copyright>Copyright (c) Godot Engine contributors and Redot Engine contributors</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
     <!-- Exclude target framework from the package dependencies as we don't include the build output -->
