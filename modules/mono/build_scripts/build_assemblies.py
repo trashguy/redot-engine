@@ -275,13 +275,10 @@ def generate_sdk_package_versions():
     if version_status != "stable":  # Pre-release
         # If version was overridden to be e.g. "beta3", we insert a dot between
         # "beta" and "3" to follow SemVer 2.0.
-        import re
-
-        match = re.search(r"[\d]+$", version_status)
-        if match:
-            pos = match.start()
-            version_status = version_status[:pos] + "." + version_status[pos:]
-        version_str += "-" + version_status
+        if version_info["status_version"] != 0:
+            version_status += "." + str(version_info["status_version"])
+        # TODO: waiting for https://www.nuget.org/packages/Redot.NET.Sdk to be made
+        # version_str += "-" + version_status
 
     import version
 

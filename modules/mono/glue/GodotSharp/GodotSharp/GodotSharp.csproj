@@ -13,16 +13,16 @@
     <AnalysisMode>Recommended</AnalysisMode>
   </PropertyGroup>
   <PropertyGroup>
-    <Description>Godot C# Core API.</Description>
-    <Authors>Godot Engine contributors</Authors>
+    <Description>Redot C# Core API.</Description>
+    <Authors>Godot Engine contributors;Redot Engine contributors</Authors>
 
     <PackageId>GodotSharp</PackageId>
-    <Version>4.3.1</Version>
+    <Version>4.3.0</Version>
     <PackageVersion>$(PackageVersion_GodotSharp)</PackageVersion>
-    <RepositoryUrl>https://github.com/godotengine/godot/tree/master/modules/mono/glue/GodotSharp/GodotSharp</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Redot-Engine/redot-engine/tree/master/modules/mono/glue/GodotSharp/GodotSharp</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Copyright>Copyright (c) Godot Engine contributors</Copyright>
+    <Copyright>Copyright (c) Godot Engine contributors and Redot Engine contributors</Copyright>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
