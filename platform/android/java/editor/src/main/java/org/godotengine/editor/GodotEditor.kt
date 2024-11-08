@@ -30,7 +30,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor
+package org.redotengine.editor
 
 import android.Manifest
 import android.app.ActivityManager
@@ -46,10 +46,10 @@ import android.widget.Toast
 import androidx.annotation.CallSuper
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.window.layout.WindowMetricsCalculator
-import org.godotengine.godot.GodotActivity
-import org.godotengine.godot.GodotLib
-import org.godotengine.godot.utils.PermissionsUtil
-import org.godotengine.godot.utils.ProcessPhoenix
+import org.redotengine.godot.GodotActivity
+import org.redotengine.godot.GodotLib
+import org.redotengine.godot.utils.PermissionsUtil
+import org.redotengine.godot.utils.ProcessPhoenix
 import java.util.*
 import kotlin.math.min
 

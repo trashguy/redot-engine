@@ -30,12 +30,12 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.io.directory
+package org.redotengine.godot.io.directory
 
 import android.content.Context
 import android.util.Log
-import org.godotengine.godot.io.directory.DirectoryAccessHandler.AccessType.ACCESS_FILESYSTEM
-import org.godotengine.godot.io.directory.DirectoryAccessHandler.AccessType.ACCESS_RESOURCES
+import org.redotengine.godot.io.directory.DirectoryAccessHandler.AccessType.ACCESS_FILESYSTEM
+import org.redotengine.godot.io.directory.DirectoryAccessHandler.AccessType.ACCESS_RESOURCES
 
 /**
  * Handles files and directories access and manipulation for the Android platform

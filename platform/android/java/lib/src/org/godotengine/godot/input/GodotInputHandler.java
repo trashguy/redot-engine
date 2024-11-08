@@ -30,12 +30,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot.input;
+package org.redotengine.godot.input;
 
-import static org.godotengine.godot.utils.GLUtils.DEBUG;
-
-import org.godotengine.godot.GodotLib;
-import org.godotengine.godot.GodotRenderView;
+import static org.redotengine.godot.utils.GLUtils.DEBUG;
 
 import android.content.Context;
 import android.hardware.input.InputManager;
@@ -52,6 +49,9 @@ import android.view.ScaleGestureDetector;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.redotengine.godot.GodotLib;
+import org.redotengine.godot.GodotRenderView;
 
 /**
  * Handles input related events for the {@link GodotRenderView} view.

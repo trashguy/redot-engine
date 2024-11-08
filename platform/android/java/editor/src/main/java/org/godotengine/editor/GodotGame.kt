@@ -30,7 +30,7 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.editor
+package org.redotengine.editor
 
 import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
@@ -40,7 +40,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import org.godotengine.godot.GodotLib
+import org.redotengine.godot.GodotLib
 
 /**
  * Drives the 'run project' window of the Godot Editor.
