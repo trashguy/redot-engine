@@ -30,11 +30,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-package org.godotengine.godot;
-
-import org.godotengine.godot.input.GodotInputHandler;
+package org.redotengine.godot;
 
 import android.view.SurfaceView;
+
+import org.redotengine.godot.input.GodotInputHandler;
 
 public interface GodotRenderView {
 	SurfaceView getView();

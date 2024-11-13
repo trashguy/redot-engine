@@ -32,11 +32,11 @@
 
 package com.godot.game;
 
-import org.godotengine.godot.GodotActivity;
-
 import android.os.Bundle;
 
 import androidx.core.splashscreen.SplashScreen;
+
+import org.redotengine.godot.GodotActivity;
 
 /**
  * Template activity for Godot Android builds.
