@@ -66,6 +66,10 @@ void SpinBox::_update_text(bool p_keep_line_edit) {
 }
 
 void SpinBox::_text_submitted(const String &p_string) {
+	if (p_string.is_empty()) {
+		return;
+	}
+
 	Ref<Expression> expr;
 	expr.instantiate();
 
@@ -232,8 +236,8 @@ void SpinBox::_line_edit_focus_exit() {
 	if (line_edit->is_menu_visible()) {
 		return;
 	}
-	// Discontinue because the focus_exit was caused by canceling.
-	if (Input::get_singleton()->is_action_pressed("ui_cancel")) {
+	// Discontinue because the focus_exit was caused by canceling or the text is empty.
+	if (Input::get_singleton()->is_action_pressed("ui_cancel") || line_edit->get_text().is_empty()) {
 		_update_text();
 		return;
 	}
