@@ -391,7 +391,7 @@ void Window::move_to_center() {
 void Window::set_size(const Size2i &p_size) {
 	ERR_MAIN_THREAD_GUARD;
 #if defined(ANDROID_ENABLED)
-	if (!get_parent()) {
+	if (!get_parent() && is_inside_tree()) {
 		// Can't set root window size on Android.
 		return;
 	}
@@ -467,7 +467,7 @@ void Window::_validate_limit_size() {
 void Window::set_max_size(const Size2i &p_max_size) {
 	ERR_MAIN_THREAD_GUARD;
 #if defined(ANDROID_ENABLED)
-	if (!get_parent()) {
+	if (!get_parent() && is_inside_tree()) {
 		// Can't set root window size on Android.
 		return;
 	}
@@ -490,7 +490,7 @@ Size2i Window::get_max_size() const {
 void Window::set_min_size(const Size2i &p_min_size) {
 	ERR_MAIN_THREAD_GUARD;
 #if defined(ANDROID_ENABLED)
-	if (!get_parent()) {
+	if (!get_parent() && is_inside_tree()) {
 		// Can't set root window size on Android.
 		return;
 	}
