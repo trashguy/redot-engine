@@ -1,0 +1,3 @@
+Godot->Redot
+godot->redot
+GODOT->REDOT
