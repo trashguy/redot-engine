@@ -404,6 +404,15 @@ Ref<Resource> ResourceFormatDDS::load(const String &p_path, const String &p_orig
 
 	if (info.compressed) {
 		// BC compressed.
+		w += w % info.divisor;
+		h += h % info.divisor;
+		if (w != width) {
+			WARN_PRINT(vformat("%s: DDS width '%d' is not divisible by %d. This is not allowed as per the DDS specification, attempting to load anyway.", f->get_path(), width, info.divisor));
+		}
+		if (h != height) {
+			WARN_PRINT(vformat("%s: DDS height '%d' is not divisible by %d. This is not allowed as per the DDS specification, attempting to load anyway.", f->get_path(), height, info.divisor));
+		}
+
 		uint32_t size = MAX(info.divisor, w) / info.divisor * MAX(info.divisor, h) / info.divisor * info.block_size;
 
 		if (flags & DDSD_LINEARSIZE) {
