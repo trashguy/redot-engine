@@ -3622,12 +3622,11 @@
 			<description>
 				Copies the viewport to a region of the screen specified by [param rect]. If [method viewport_set_render_direct_to_screen] is [code]true[/code], then the viewport does not use a framebuffer and the contents of the viewport are rendered directly to screen. However, note that the root viewport is drawn last, therefore it will draw over the screen. Accordingly, you must set the root viewport to an area that does not cover the area that you have attached this viewport to.
 				For example, you can set the root viewport to not render at all with the following code:
-				FIXME: The method seems to be non-existent.
 				[codeblocks]
 				[gdscript]
 				func _ready():
-				    get_viewport().set_attach_to_screen_rect(Rect2())
-				    $Viewport.set_attach_to_screen_rect(Rect2(0, 0, 600, 600))
+				    RenderingServer.viewport_attach_to_screen(get_viewport().get_viewport_rid(), Rect2())
+				    RenderingServer.viewport_attach_to_screen($Viewport.get_viewport_rid(), Rect2(0, 0, 600, 600))
 				[/gdscript]
 				[/codeblocks]
 				Using this can result in significant optimization, especially on lower-end devices. However, it comes at the cost of having to manage your viewports manually. For further optimization, see [method viewport_set_render_direct_to_screen].
@@ -3653,7 +3652,7 @@
 			<return type="float" />
 			<param index="0" name="viewport" type="RID" />
 			<description>
-				Returns the GPU time taken to render the last frame in milliseconds. To get a complete readout of GPU time spent to render the scene, sum the render times of all viewports that are drawn every frame. Unlike [method Engine.get_frames_per_second], this method accurately reflects GPU utilization even if framerate is capped via V-Sync or [member Engine.max_fps]. See also [method viewport_get_measured_render_time_gpu].
+				Returns the GPU time taken to render the last frame in milliseconds. To get a complete readout of GPU time spent to render the scene, sum the render times of all viewports that are drawn every frame. Unlike [method Engine.get_frames_per_second], this method accurately reflects GPU utilization even if framerate is capped via V-Sync or [member Engine.max_fps]. See also [method viewport_get_measured_render_time_cpu].
 				[b]Note:[/b] Requires measurements to be enabled on the specified [param viewport] using [method viewport_set_measure_render_time]. Otherwise, this method returns [code]0.0[/code].
 				[b]Note:[/b] When GPU utilization is low enough during a certain period of time, GPUs will decrease their power state (which in turn decreases core and memory clock speeds). This can cause the reported GPU time to increase if GPU utilization is kept low enough by a framerate cap (compared to what it would be at the GPU's highest power state). Keep this in mind when benchmarking using [method viewport_get_measured_render_time_gpu]. This behavior can be overridden in the graphics driver settings at the cost of higher power usage.
 			</description>
@@ -3831,7 +3830,7 @@
 			<param index="0" name="viewport" type="RID" />
 			<param index="1" name="msaa" type="int" enum="RenderingServer.ViewportMSAA" />
 			<description>
-				Sets the multisample anti-aliasing mode for 2D/Canvas on the specified [param viewport] RID. See [enum ViewportMSAA] for options.
+				Sets the multisample antialiasing mode for 2D/Canvas on the specified [param viewport] RID. See [enum ViewportMSAA] for options. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/msaa_2d] or [member Viewport.msaa_2d].
 			</description>
 		</method>
 		<method name="viewport_set_msaa_3d">
@@ -3839,7 +3838,7 @@
 			<param index="0" name="viewport" type="RID" />
 			<param index="1" name="msaa" type="int" enum="RenderingServer.ViewportMSAA" />
 			<description>
-				Sets the multisample anti-aliasing mode for 3D on the specified [param viewport] RID. See [enum ViewportMSAA] for options.
+				Sets the multisample antialiasing mode for 3D on the specified [param viewport] RID. See [enum ViewportMSAA] for options. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/msaa_3d] or [member Viewport.msaa_3d].
 			</description>
 		</method>
 		<method name="viewport_set_occlusion_culling_build_quality">
@@ -3921,7 +3920,7 @@
 			<param index="0" name="viewport" type="RID" />
 			<param index="1" name="mode" type="int" enum="RenderingServer.ViewportScreenSpaceAA" />
 			<description>
-				Sets the viewport's screen-space antialiasing mode.
+				Sets the viewport's screen-space antialiasing mode. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/screen_space_aa] or [member Viewport.screen_space_aa].
 			</description>
 		</method>
 		<method name="viewport_set_sdf_oversize_and_scale">
@@ -3988,7 +3987,7 @@
 			<param index="0" name="viewport" type="RID" />
 			<param index="1" name="enable" type="bool" />
 			<description>
-				If [code]true[/code], enables debanding on the specified viewport. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/use_debanding].
+				If [code]true[/code], enables debanding on the specified viewport. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/use_debanding] or [member Viewport.use_debanding].
 			</description>
 		</method>
 		<method name="viewport_set_use_hdr_2d">
@@ -4013,7 +4012,7 @@
 			<param index="0" name="viewport" type="RID" />
 			<param index="1" name="enable" type="bool" />
 			<description>
-				If [code]true[/code], use Temporal Anti-Aliasing. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/use_taa].
+				If [code]true[/code], use temporal antialiasing. Equivalent to [member ProjectSettings.rendering/anti_aliasing/quality/use_taa] or [member Viewport.use_taa].
 			</description>
 		</method>
 		<method name="viewport_set_use_xr">
@@ -4406,27 +4405,37 @@
 			Flag used to mark an index array.
 		</constant>
 		<constant name="ARRAY_FORMAT_BLEND_SHAPE_MASK" value="7" enum="ArrayFormat" is_bitfield="true">
+			Mask of mesh channels permitted in blend shapes.
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM_BASE" value="13" enum="ArrayFormat" is_bitfield="true">
+			Shift of first custom channel.
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM_BITS" value="3" enum="ArrayFormat" is_bitfield="true">
+			Number of format bits per custom channel. See [enum ArrayCustomFormat].
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM0_SHIFT" value="13" enum="ArrayFormat" is_bitfield="true">
+			Amount to shift [enum ArrayCustomFormat] for custom channel index 0.
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM1_SHIFT" value="16" enum="ArrayFormat" is_bitfield="true">
+			Amount to shift [enum ArrayCustomFormat] for custom channel index 1.
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM2_SHIFT" value="19" enum="ArrayFormat" is_bitfield="true">
+			Amount to shift [enum ArrayCustomFormat] for custom channel index 2.
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM3_SHIFT" value="22" enum="ArrayFormat" is_bitfield="true">
+			Amount to shift [enum ArrayCustomFormat] for custom channel index 3.
 		</constant>
 		<constant name="ARRAY_FORMAT_CUSTOM_MASK" value="7" enum="ArrayFormat" is_bitfield="true">
+			Mask of custom format bits per custom channel. Must be shifted by one of the SHIFT constants. See [enum ArrayCustomFormat].
 		</constant>
 		<constant name="ARRAY_COMPRESS_FLAGS_BASE" value="25" enum="ArrayFormat" is_bitfield="true">
+			Shift of first compress flag. Compress flags should be passed to [method ArrayMesh.add_surface_from_arrays] and [method SurfaceTool.commit].
 		</constant>
 		<constant name="ARRAY_FLAG_USE_2D_VERTICES" value="33554432" enum="ArrayFormat" is_bitfield="true">
 			Flag used to mark that the array contains 2D vertices.
 		</constant>
 		<constant name="ARRAY_FLAG_USE_DYNAMIC_UPDATE" value="67108864" enum="ArrayFormat" is_bitfield="true">
+			Flag indices that the mesh data will use [code]GL_DYNAMIC_DRAW[/code] on GLES. Unused on Vulkan.
 		</constant>
 		<constant name="ARRAY_FLAG_USE_8_BONE_WEIGHTS" value="134217728" enum="ArrayFormat" is_bitfield="true">
 			Flag used to mark that the array uses 8 bone weights instead of 4.
