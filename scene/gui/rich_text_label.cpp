@@ -2785,10 +2785,7 @@ void RichTextLabel::_thread_end() {
 void RichTextLabel::_stop_thread() {
 	if (threaded) {
 		stop_thread.store(true);
-		if (task != WorkerThreadPool::INVALID_TASK_ID) {
-			WorkerThreadPool::get_singleton()->wait_for_task_completion(task);
-			task = WorkerThreadPool::INVALID_TASK_ID;
-		}
+		wait_until_finished();
 	}
 }
 
@@ -2810,6 +2807,13 @@ bool RichTextLabel::is_ready() const {
 
 bool RichTextLabel::is_updating() const {
 	return updating.load() || validating.load();
+}
+
+void RichTextLabel::wait_until_finished() {
+	if (task != WorkerThreadPool::INVALID_TASK_ID) {
+		WorkerThreadPool::get_singleton()->wait_for_task_completion(task);
+		task = WorkerThreadPool::INVALID_TASK_ID;
+	}
 }
 
 void RichTextLabel::set_threaded(bool p_threaded) {

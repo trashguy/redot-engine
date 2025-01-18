@@ -88,6 +88,8 @@ class TranslationServer : public Object {
 	Ref<Translation> doc_translation;
 	Ref<Translation> extractable_translation;
 
+	mutable HashMap<String, int> locale_compare_cache;
+
 	bool enabled = true;
 
 	bool pseudolocalization_enabled = false;

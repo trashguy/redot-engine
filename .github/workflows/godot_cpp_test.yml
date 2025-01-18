@@ -15,8 +15,8 @@ concurrency:
 
 jobs:
   godot-cpp-tests:
-    runs-on: "ubuntu-20.04"
-    name: "Build and test Godot CPP"
+    runs-on: ubuntu-24.04
+    name: Build and test Godot CPP
     steps:
       - uses: actions/checkout@v4
         with:

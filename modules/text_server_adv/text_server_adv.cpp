@@ -1349,7 +1349,7 @@ _FORCE_INLINE_ bool TextServerAdvanced::_ensure_glyph(FontAdvanced *p_font_data,
 	return false;
 }
 
-_FORCE_INLINE_ bool TextServerAdvanced::_ensure_cache_for_size(FontAdvanced *p_font_data, const Vector2i &p_size) const {
+_FORCE_INLINE_ bool TextServerAdvanced::_ensure_cache_for_size(FontAdvanced *p_font_data, const Vector2i &p_size, bool p_silent) const {
 	ERR_FAIL_COND_V(p_size.x <= 0, false);
 	if (p_font_data->cache.has(p_size)) {
 		return true;
@@ -1367,7 +1367,11 @@ _FORCE_INLINE_ bool TextServerAdvanced::_ensure_cache_for_size(FontAdvanced *p_f
 				error = FT_Init_FreeType(&ft_library);
 				if (error != 0) {
 					memdelete(fd);
-					ERR_FAIL_V_MSG(false, "FreeType: Error initializing library: '" + String(FT_Error_String(error)) + "'.");
+					if (p_silent) {
+						return false;
+					} else {
+						ERR_FAIL_V_MSG(false, "FreeType: Error initializing library: '" + String(FT_Error_String(error)) + "'.");
+					}
 				}
 #ifdef MODULE_SVG_ENABLED
 				FT_Property_Set(ft_library, "ot-svg", "svg-hooks", get_tvg_svg_in_ot_hooks());
@@ -1401,7 +1405,11 @@ _FORCE_INLINE_ bool TextServerAdvanced::_ensure_cache_for_size(FontAdvanced *p_f
 				FT_Done_Face(fd->face);
 				fd->face = nullptr;
 				memdelete(fd);
-				ERR_FAIL_V_MSG(false, "FreeType: Error loading font: '" + String(FT_Error_String(error)) + "'.");
+				if (p_silent) {
+					return false;
+				} else {
+					ERR_FAIL_V_MSG(false, "FreeType: Error loading font: '" + String(FT_Error_String(error)) + "'.");
+				}
 			}
 		}
 
@@ -1836,7 +1844,11 @@ _FORCE_INLINE_ bool TextServerAdvanced::_ensure_cache_for_size(FontAdvanced *p_f
 		}
 #else
 		memdelete(fd);
-		ERR_FAIL_V_MSG(false, "FreeType: Can't load dynamic font, engine is compiled without FreeType support!");
+		if (p_silent) {
+			return false;
+		} else {
+			ERR_FAIL_V_MSG(false, "FreeType: Can't load dynamic font, engine is compiled without FreeType support!");
+		}
 #endif
 	} else {
 		// Init bitmap font.
@@ -1844,6 +1856,15 @@ _FORCE_INLINE_ bool TextServerAdvanced::_ensure_cache_for_size(FontAdvanced *p_f
 	}
 	p_font_data->cache[p_size] = fd;
 	return true;
+}
+
+_FORCE_INLINE_ bool TextServerAdvanced::_font_validate(const RID &p_font_rid) const {
+	FontAdvanced *fd = _get_font_data(p_font_rid);
+	ERR_FAIL_NULL_V(fd, false);
+
+	MutexLock lock(fd->mutex);
+	Vector2i size = _get_size(fd, 16);
+	return _ensure_cache_for_size(fd, size, true);
 }
 
 _FORCE_INLINE_ void TextServerAdvanced::_font_clear_cache(FontAdvanced *p_font_data) {
@@ -4999,6 +5020,10 @@ RID TextServerAdvanced::_find_sys_font_for_text(const RID &p_fdef, const String 
 			SystemFontCacheRec sysf;
 			sysf.rid = _create_font();
 			_font_set_data_ptr(sysf.rid, font_data.ptr(), font_data.size());
+			if (!_font_validate(sysf.rid)) {
+				_free_rid(sysf.rid);
+				continue;
+			}
 
 			Dictionary var = dvar;
 			// Select matching style from collection.
