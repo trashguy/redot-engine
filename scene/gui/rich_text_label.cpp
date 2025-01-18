@@ -1804,13 +1804,13 @@ void RichTextLabel::_notification(int p_what) {
 
 		case NOTIFICATION_RESIZED: {
 			_stop_thread();
-			main->first_resized_line.store(0); //invalidate ALL
+			main->first_resized_line.store(0); // Invalidate all lines.
 			queue_redraw();
 		} break;
 
 		case NOTIFICATION_THEME_CHANGED: {
 			_stop_thread();
-			main->first_invalid_font_line.store(0); //invalidate ALL
+			main->first_invalid_font_line.store(0); // Invalidate all lines.
 			queue_redraw();
 		} break;
 
@@ -1820,7 +1820,7 @@ void RichTextLabel::_notification(int p_what) {
 				set_text(text);
 			}
 
-			main->first_invalid_line.store(0); //invalidate ALL
+			main->first_invalid_line.store(0); // Invalidate all lines.
 			queue_redraw();
 		} break;
 
@@ -1831,8 +1831,7 @@ void RichTextLabel::_notification(int p_what) {
 
 		case NOTIFICATION_LAYOUT_DIRECTION_CHANGED:
 		case NOTIFICATION_TRANSLATION_CHANGED: {
-			// If `text` is empty, it could mean that the tag stack is being used instead. Leave it be.
-			if (!text.is_empty()) {
+			if (!stack_externally_modified) {
 				_apply_translation();
 			}
 
@@ -2532,7 +2531,7 @@ PackedFloat32Array RichTextLabel::_find_tab_stops(Item *p_item) {
 		item = item->parent;
 	}
 
-	return PackedFloat32Array();
+	return default_tab_stops;
 }
 
 HorizontalAlignment RichTextLabel::_find_alignment(Item *p_item) {
@@ -3094,6 +3093,10 @@ void RichTextLabel::add_text(const String &p_text) {
 }
 
 void RichTextLabel::_add_item(Item *p_item, bool p_enter, bool p_ensure_newline) {
+	if (!internal_stack_editing) {
+		stack_externally_modified = true;
+	}
+
 	p_item->parent = current;
 	p_item->E = current->subitems.push_back(p_item);
 	p_item->index = current_idx++;
@@ -3366,6 +3369,8 @@ bool RichTextLabel::remove_paragraph(int p_paragraph, bool p_no_invalidate) {
 	if (p_paragraph >= (int)main->lines.size() || p_paragraph < 0) {
 		return false;
 	}
+
+	stack_externally_modified = true;
 
 	if (main->lines.size() == 1) {
 		// Clear all.
@@ -3985,6 +3990,8 @@ void RichTextLabel::clear() {
 	_stop_thread();
 	MutexLock data_lock(data_mutex);
 
+	stack_externally_modified = false;
+
 	main->_clear_children();
 	current = main;
 	current_frame = main;
@@ -4448,19 +4455,19 @@ void RichTextLabel::append_text(const String &p_bbcode) {
 			add_text(String::chr(0x00AD));
 			pos = brk_end + 1;
 		} else if (tag == "center") {
-			push_paragraph(HORIZONTAL_ALIGNMENT_CENTER);
+			push_paragraph(HORIZONTAL_ALIGNMENT_CENTER, text_direction, language, st_parser, default_jst_flags, default_tab_stops);
 			pos = brk_end + 1;
 			tag_stack.push_front(tag);
 		} else if (tag == "fill") {
-			push_paragraph(HORIZONTAL_ALIGNMENT_FILL);
+			push_paragraph(HORIZONTAL_ALIGNMENT_FILL, text_direction, language, st_parser, default_jst_flags, default_tab_stops);
 			pos = brk_end + 1;
 			tag_stack.push_front(tag);
 		} else if (tag == "left") {
-			push_paragraph(HORIZONTAL_ALIGNMENT_LEFT);
+			push_paragraph(HORIZONTAL_ALIGNMENT_LEFT, text_direction, language, st_parser, default_jst_flags, default_tab_stops);
 			pos = brk_end + 1;
 			tag_stack.push_front(tag);
 		} else if (tag == "right") {
-			push_paragraph(HORIZONTAL_ALIGNMENT_RIGHT);
+			push_paragraph(HORIZONTAL_ALIGNMENT_RIGHT, text_direction, language, st_parser, default_jst_flags, default_tab_stops);
 			pos = brk_end + 1;
 			tag_stack.push_front(tag);
 		} else if (tag == "ul") {
@@ -4519,8 +4526,8 @@ void RichTextLabel::append_text(const String &p_bbcode) {
 
 			HorizontalAlignment alignment = HORIZONTAL_ALIGNMENT_LEFT;
 			Control::TextDirection dir = Control::TEXT_DIRECTION_INHERITED;
-			String lang;
-			PackedFloat32Array tab_stops;
+			String lang = language;
+			PackedFloat32Array tab_stops = default_tab_stops;
 			TextServer::StructuredTextParser st_parser_type = TextServer::STRUCTURED_TEXT_DEFAULT;
 			BitField<TextServer::JustificationFlag> jst_flags = default_jst_flags;
 			for (int i = 0; i < subtag.size(); i++) {
@@ -5675,11 +5682,19 @@ void RichTextLabel::set_text(const String &p_bbcode) {
 		return;
 	}
 
+	stack_externally_modified = false;
+
 	text = p_bbcode;
 	_apply_translation();
 }
 
 void RichTextLabel::_apply_translation() {
+	if (text.is_empty()) {
+		return;
+	}
+
+	internal_stack_editing = true;
+
 	String xl_text = atr(text);
 	if (use_bbcode) {
 		parse_bbcode(xl_text);
@@ -5687,6 +5702,8 @@ void RichTextLabel::_apply_translation() {
 		clear();
 		add_text(xl_text);
 	}
+
+	internal_stack_editing = false;
 }
 
 String RichTextLabel::get_text() const {
@@ -5700,8 +5717,7 @@ void RichTextLabel::set_use_bbcode(bool p_enable) {
 	use_bbcode = p_enable;
 	notify_property_list_changed();
 
-	// If `text` is empty, it could mean that the tag stack is being used instead. Leave it be.
-	if (!text.is_empty()) {
+	if (!stack_externally_modified) {
 		_apply_translation();
 	}
 }
@@ -5711,7 +5727,7 @@ bool RichTextLabel::is_using_bbcode() const {
 }
 
 String RichTextLabel::get_parsed_text() const {
-	String txt = "";
+	String txt;
 	Item *it = main;
 	while (it) {
 		if (it->type == ITEM_DROPCAP) {
@@ -5738,10 +5754,76 @@ void RichTextLabel::set_text_direction(Control::TextDirection p_text_direction) 
 
 	if (text_direction != p_text_direction) {
 		text_direction = p_text_direction;
-		main->first_invalid_line.store(0); //invalidate ALL
-		_validate_line_caches();
+		if (!stack_externally_modified) {
+			_apply_translation();
+		} else {
+			main->first_invalid_line.store(0); // Invalidate all lines.
+			_validate_line_caches();
+		}
 		queue_redraw();
 	}
+}
+
+Control::TextDirection RichTextLabel::get_text_direction() const {
+	return text_direction;
+}
+
+void RichTextLabel::set_horizontal_alignment(HorizontalAlignment p_alignment) {
+	ERR_FAIL_INDEX((int)p_alignment, 4);
+	_stop_thread();
+
+	if (default_alignment != p_alignment) {
+		default_alignment = p_alignment;
+		if (!stack_externally_modified) {
+			_apply_translation();
+		} else {
+			main->first_invalid_line.store(0); // Invalidate all lines.
+			_validate_line_caches();
+		}
+		queue_redraw();
+	}
+}
+
+HorizontalAlignment RichTextLabel::get_horizontal_alignment() const {
+	return default_alignment;
+}
+
+void RichTextLabel::set_justification_flags(BitField<TextServer::JustificationFlag> p_flags) {
+	_stop_thread();
+
+	if (default_jst_flags != p_flags) {
+		default_jst_flags = p_flags;
+		if (!stack_externally_modified) {
+			_apply_translation();
+		} else {
+			main->first_invalid_line.store(0); // Invalidate all lines.
+			_validate_line_caches();
+		}
+		queue_redraw();
+	}
+}
+
+BitField<TextServer::JustificationFlag> RichTextLabel::get_justification_flags() const {
+	return default_jst_flags;
+}
+
+void RichTextLabel::set_tab_stops(const PackedFloat32Array &p_tab_stops) {
+	_stop_thread();
+
+	if (default_tab_stops != p_tab_stops) {
+		default_tab_stops = p_tab_stops;
+		if (!stack_externally_modified) {
+			_apply_translation();
+		} else {
+			main->first_invalid_line.store(0); // Invalidate all lines.
+			_validate_line_caches();
+		}
+		queue_redraw();
+	}
+}
+
+PackedFloat32Array RichTextLabel::get_tab_stops() const {
+	return default_tab_stops;
 }
 
 void RichTextLabel::set_structured_text_bidi_override(TextServer::StructuredTextParser p_parser) {
@@ -5749,8 +5831,12 @@ void RichTextLabel::set_structured_text_bidi_override(TextServer::StructuredText
 		_stop_thread();
 
 		st_parser = p_parser;
-		main->first_invalid_line.store(0); //invalidate ALL
-		_validate_line_caches();
+		if (!stack_externally_modified) {
+			_apply_translation();
+		} else {
+			main->first_invalid_line.store(0); // Invalidate all lines.
+			_validate_line_caches();
+		}
 		queue_redraw();
 	}
 }
@@ -5764,7 +5850,7 @@ void RichTextLabel::set_structured_text_bidi_override_options(Array p_args) {
 		_stop_thread();
 
 		st_args = p_args;
-		main->first_invalid_line.store(0); //invalidate ALL
+		main->first_invalid_line.store(0); // Invalidate all lines.
 		_validate_line_caches();
 		queue_redraw();
 	}
@@ -5774,17 +5860,17 @@ Array RichTextLabel::get_structured_text_bidi_override_options() const {
 	return st_args;
 }
 
-Control::TextDirection RichTextLabel::get_text_direction() const {
-	return text_direction;
-}
-
 void RichTextLabel::set_language(const String &p_language) {
 	if (language != p_language) {
 		_stop_thread();
 
 		language = p_language;
-		main->first_invalid_line.store(0); //invalidate ALL
-		_validate_line_caches();
+		if (!stack_externally_modified) {
+			_apply_translation();
+		} else {
+			main->first_invalid_line.store(0); // Invalidate all lines.
+			_validate_line_caches();
+		}
 		queue_redraw();
 	}
 }
@@ -5798,7 +5884,7 @@ void RichTextLabel::set_autowrap_mode(TextServer::AutowrapMode p_mode) {
 		_stop_thread();
 
 		autowrap_mode = p_mode;
-		main->first_invalid_line = 0; //invalidate ALL
+		main->first_invalid_line = 0; // Invalidate all lines.
 		_validate_line_caches();
 		queue_redraw();
 	}
@@ -5824,7 +5910,7 @@ void RichTextLabel::set_visible_ratio(float p_ratio) {
 		}
 
 		if (visible_chars_behavior == TextServer::VC_CHARS_BEFORE_SHAPING) {
-			main->first_invalid_line.store(0); // Invalidate ALL.
+			main->first_invalid_line.store(0); //  Invalidate all lines..
 			_validate_line_caches();
 		}
 		queue_redraw();
@@ -5837,7 +5923,7 @@ float RichTextLabel::get_visible_ratio() const {
 
 void RichTextLabel::set_effects(Array p_effects) {
 	custom_effects = p_effects;
-	if ((!text.is_empty()) && use_bbcode) {
+	if (!stack_externally_modified && use_bbcode) {
 		parse_bbcode(atr(text));
 	}
 }
@@ -5852,7 +5938,7 @@ void RichTextLabel::install_effect(const Variant effect) {
 
 	ERR_FAIL_COND_MSG(rteffect.is_null(), "Invalid RichTextEffect resource.");
 	custom_effects.push_back(effect);
-	if ((!text.is_empty()) && use_bbcode) {
+	if (!stack_externally_modified && use_bbcode) {
 		parse_bbcode(atr(text));
 	}
 }
@@ -5951,6 +6037,13 @@ void RichTextLabel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_text_direction"), &RichTextLabel::get_text_direction);
 	ClassDB::bind_method(D_METHOD("set_language", "language"), &RichTextLabel::set_language);
 	ClassDB::bind_method(D_METHOD("get_language"), &RichTextLabel::get_language);
+
+	ClassDB::bind_method(D_METHOD("set_horizontal_alignment", "alignment"), &RichTextLabel::set_horizontal_alignment);
+	ClassDB::bind_method(D_METHOD("get_horizontal_alignment"), &RichTextLabel::get_horizontal_alignment);
+	ClassDB::bind_method(D_METHOD("set_justification_flags", "justification_flags"), &RichTextLabel::set_justification_flags);
+	ClassDB::bind_method(D_METHOD("get_justification_flags"), &RichTextLabel::get_justification_flags);
+	ClassDB::bind_method(D_METHOD("set_tab_stops", "tab_stops"), &RichTextLabel::set_tab_stops);
+	ClassDB::bind_method(D_METHOD("get_tab_stops"), &RichTextLabel::get_tab_stops);
 
 	ClassDB::bind_method(D_METHOD("set_autowrap_mode", "autowrap_mode"), &RichTextLabel::set_autowrap_mode);
 	ClassDB::bind_method(D_METHOD("get_autowrap_mode"), &RichTextLabel::get_autowrap_mode);
@@ -6069,6 +6162,10 @@ void RichTextLabel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "context_menu_enabled"), "set_context_menu_enabled", "is_context_menu_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shortcut_keys_enabled"), "set_shortcut_keys_enabled", "is_shortcut_keys_enabled");
 
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "horizontal_alignment", PROPERTY_HINT_ENUM, "Left,Center,Right,Fill"), "set_horizontal_alignment", "get_horizontal_alignment");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "justification_flags", PROPERTY_HINT_FLAGS, "Kashida Justification:1,Word Justification:2,Justify Only After Last Tab:8,Skip Last Line:32,Skip Last Line With Visible Characters:64,Do Not Skip Single Line:128"), "set_justification_flags", "get_justification_flags");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "tab_stops"), "set_tab_stops", "get_tab_stops");
+
 	ADD_GROUP("Markup", "");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "custom_effects", PROPERTY_HINT_ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("RichTextEffect"), (PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE)), "set_effects", "get_effects");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "meta_underlined"), "set_meta_underline", "is_meta_underlined");
@@ -6171,7 +6268,7 @@ void RichTextLabel::set_visible_characters_behavior(TextServer::VisibleCharacter
 		_stop_thread();
 
 		visible_chars_behavior = p_behavior;
-		main->first_invalid_line.store(0); //invalidate ALL
+		main->first_invalid_line.store(0); // Invalidate all lines.
 		_validate_line_caches();
 		queue_redraw();
 	}
@@ -6191,7 +6288,7 @@ void RichTextLabel::set_visible_characters(int p_visible) {
 			}
 		}
 		if (visible_chars_behavior == TextServer::VC_CHARS_BEFORE_SHAPING) {
-			main->first_invalid_line.store(0); //invalidate ALL
+			main->first_invalid_line.store(0); // Invalidate all lines.
 			_validate_line_caches();
 		}
 		queue_redraw();
