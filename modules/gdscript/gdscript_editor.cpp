@@ -1112,10 +1112,12 @@ static void _find_identifiers_in_class(const GDScriptParser::ClassNode *p_class,
 							continue;
 						}
 						option = ScriptLanguage::CodeCompletionOption(member.function->identifier->name, ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION, location);
-						if (member.function->parameters.size() > 0) {
+						if (member.function->parameters.size() > 0 || (member.function->info.flags & METHOD_FLAG_VARARG)) {
 							option.insert_text += "(";
+							option.display += U"(\u2026)";
 						} else {
 							option.insert_text += "()";
+							option.display += "()";
 						}
 						break;
 					case GDScriptParser::ClassNode::Member::SIGNAL:
@@ -1157,6 +1159,7 @@ static void _find_identifiers_in_base(const GDScriptCompletionIdentifier &p_base
 	if (!p_types_only && base_type.is_meta_type && base_type.kind != GDScriptParser::DataType::BUILTIN && base_type.kind != GDScriptParser::DataType::ENUM) {
 		ScriptLanguage::CodeCompletionOption option("new", ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION, ScriptLanguage::LOCATION_LOCAL);
 		option.insert_text += "(";
+		option.display += U"(\u2026)";
 		r_result.insert(option.display, option);
 	}
 
@@ -1214,10 +1217,12 @@ static void _find_identifiers_in_base(const GDScriptCompletionIdentifier &p_base
 							}
 							int location = p_recursion_depth + _get_method_location(scr->get_class_name(), E.name);
 							ScriptLanguage::CodeCompletionOption option(E.name, ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION, location);
-							if (E.arguments.size()) {
+							if (E.arguments.size() || (E.flags & METHOD_FLAG_VARARG)) {
 								option.insert_text += "(";
+								option.display += U"(\u2026)";
 							} else {
 								option.insert_text += "()";
+								option.display += "()";
 							}
 							r_result.insert(option.display, option);
 						}
@@ -1300,10 +1305,12 @@ static void _find_identifiers_in_base(const GDScriptCompletionIdentifier &p_base
 					}
 					int location = p_recursion_depth + _get_method_location(type, E.name);
 					ScriptLanguage::CodeCompletionOption option(E.name, ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION, location);
-					if (E.arguments.size()) {
+					if (E.arguments.size() || (E.flags & METHOD_FLAG_VARARG)) {
 						option.insert_text += "(";
+						option.display += U"(\u2026)";
 					} else {
 						option.insert_text += "()";
+						option.display += "()";
 					}
 					r_result.insert(option.display, option);
 				}
@@ -1371,10 +1378,12 @@ static void _find_identifiers_in_base(const GDScriptCompletionIdentifier &p_base
 						continue;
 					}
 					ScriptLanguage::CodeCompletionOption option(E.name, ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION, location);
-					if (E.arguments.size()) {
+					if (E.arguments.size() || (E.flags & METHOD_FLAG_VARARG)) {
 						option.insert_text += "(";
+						option.display += U"(\u2026)";
 					} else {
 						option.insert_text += "()";
+						option.display += "()";
 					}
 					r_result.insert(option.display, option);
 				}
@@ -1406,8 +1415,10 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 		ScriptLanguage::CodeCompletionOption option(String(E), ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION);
 		if (function.arguments.size() || (function.flags & METHOD_FLAG_VARARG)) {
 			option.insert_text += "(";
+			option.display += U"(\u2026)";
 		} else {
 			option.insert_text += "()";
+			option.display += "()";
 		}
 		r_result.insert(option.display, option);
 	}
@@ -1454,6 +1465,7 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 	while (*kwa) {
 		ScriptLanguage::CodeCompletionOption option(*kwa, ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION);
 		option.insert_text += "(";
+		option.display += U"(\u2026)";
 		r_result.insert(option.display, option);
 		kwa++;
 	}
@@ -1464,6 +1476,7 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 	for (List<StringName>::Element *E = utility_func_names.front(); E; E = E->next()) {
 		ScriptLanguage::CodeCompletionOption option(E->get(), ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION);
 		option.insert_text += "(";
+		option.display += U"(\u2026)"; // As all utility functions contain an argument or more, this is hardcoded here.
 		r_result.insert(option.display, option);
 	}
 
@@ -1880,7 +1893,7 @@ static bool _guess_expression_type(GDScriptParser::CompletionContext &p_context,
 						}
 					}
 
-					if (!found && base.value.get_type() != Variant::NIL) {
+					if (!found) {
 						found = _guess_method_return_type_from_base(c, base, call->function_name, r_type);
 					}
 				}
@@ -3754,7 +3767,19 @@ static Error _lookup_symbol_from_base(const GDScriptParser::DataType &p_base, co
 				}
 			} break;
 			case GDScriptParser::DataType::ENUM: {
-				if (base_type.enum_values.has(p_symbol)) {
+				if (base_type.class_type && base_type.class_type->has_member(base_type.enum_type)) {
+					GDScriptParser::EnumNode *base_enum = base_type.class_type->get_member(base_type.enum_type).m_enum;
+					for (const GDScriptParser::EnumNode::Value &value : base_enum->values) {
+						if (value.identifier && value.identifier->name == p_symbol) {
+							r_result.type = ScriptLanguage::LOOKUP_RESULT_SCRIPT_LOCATION;
+							r_result.class_path = base_type.script_path;
+							r_result.location = value.line;
+							Error err = OK;
+							r_result.script = GDScriptCache::get_shallow_script(r_result.class_path, err);
+							return err;
+						}
+					}
+				} else if (base_type.enum_values.has(p_symbol)) {
 					r_result.type = ScriptLanguage::LOOKUP_RESULT_CLASS_CONSTANT;
 					r_result.class_name = String(base_type.native_type).get_slicec('.', 0);
 					r_result.class_member = p_symbol;
