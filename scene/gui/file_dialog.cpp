@@ -1458,6 +1458,7 @@ FileDialog::FileDialog() {
 	vbox->add_child(hbc);
 
 	tree = memnew(Tree);
+	tree->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
 	tree->set_hide_root(true);
 	vbox->add_margin_child(ETR("Directories & Files:"), tree, true);
 

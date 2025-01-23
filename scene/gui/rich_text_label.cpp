@@ -821,6 +821,9 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 	}
 
 	int line_count = 0;
+	bool has_visible_chars = false;
+	// Bottom margin for text clipping.
+	float v_limit = theme_cache.normal_style->get_margin(SIDE_BOTTOM);
 	Size2 ctrl_size = get_size();
 	// Draw text.
 	for (int line = 0; line < l.text_buf->get_line_count(); line++) {
@@ -828,7 +831,7 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 			off.y += theme_cache.line_separation;
 		}
 
-		if (p_ofs.y + off.y >= ctrl_size.height) {
+		if (p_ofs.y + off.y >= ctrl_size.height - v_limit) {
 			break;
 		}
 
@@ -842,8 +845,6 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 		float length = l.text_buf->get_line_size(line).x;
 
 		// Draw line.
-		line_count++;
-
 		if (rtl) {
 			off.x = p_width - l.offset.x - width;
 			if (!lrtl && p_frame == main) { // Skip Scrollbar.
@@ -914,84 +915,6 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 		double uth = TS->shaped_text_get_underline_thickness(rid);
 
 		off.y += l_ascent;
-		// Draw inlined objects.
-		Array objects = TS->shaped_text_get_objects(rid);
-		for (int i = 0; i < objects.size(); i++) {
-			Item *it = items.get_or_null(objects[i]);
-			if (it != nullptr) {
-				Vector2i obj_range = TS->shaped_text_get_object_range(rid, objects[i]);
-				if (trim_chars && l.char_offset + obj_range.y > visible_characters) {
-					continue;
-				}
-				if (trim_glyphs_ltr || trim_glyphs_rtl) {
-					int obj_glyph = r_processed_glyphs + TS->shaped_text_get_object_glyph(rid, objects[i]);
-					if ((trim_glyphs_ltr && (obj_glyph >= visible_glyphs)) || (trim_glyphs_rtl && (obj_glyph < total_glyphs - visible_glyphs))) {
-						continue;
-					}
-				}
-				Rect2 rect = TS->shaped_text_get_object_rect(rid, objects[i]);
-				switch (it->type) {
-					case ITEM_IMAGE: {
-						ItemImage *img = static_cast<ItemImage *>(it);
-						if (img->pad) {
-							Size2 pad_size = rect.size.min(img->image->get_size());
-							Vector2 pad_off = (rect.size - pad_size) / 2;
-							img->image->draw_rect(ci, Rect2(p_ofs + rect.position + off + pad_off, pad_size), false, img->color);
-						} else {
-							img->image->draw_rect(ci, Rect2(p_ofs + rect.position + off, rect.size), false, img->color);
-						}
-					} break;
-					case ITEM_TABLE: {
-						ItemTable *table = static_cast<ItemTable *>(it);
-						Color odd_row_bg = theme_cache.table_odd_row_bg;
-						Color even_row_bg = theme_cache.table_even_row_bg;
-						Color border = theme_cache.table_border;
-						float h_separation = theme_cache.table_h_separation;
-						float v_separation = theme_cache.table_v_separation;
-
-						int col_count = table->columns.size();
-						int row_count = table->rows.size();
-
-						int idx = 0;
-						for (Item *E : table->subitems) {
-							ItemFrame *frame = static_cast<ItemFrame *>(E);
-
-							int col = idx % col_count;
-							int row = idx / col_count;
-
-							if (frame->lines.size() != 0 && row < row_count) {
-								Vector2 coff = frame->lines[0].offset;
-								if (rtl) {
-									coff.x = rect.size.width - table->columns[col].width - coff.x;
-								}
-								if (row % 2 == 0) {
-									Color c = frame->odd_row_bg != Color(0, 0, 0, 0) ? frame->odd_row_bg : odd_row_bg;
-									if (c.a > 0.0) {
-										draw_rect(Rect2(p_ofs + rect.position + off + coff - frame->padding.position - Vector2(h_separation * 0.5, v_separation * 0.5).floor(), Size2(table->columns[col].width + h_separation + frame->padding.position.x + frame->padding.size.x, table->rows[row])), c, true);
-									}
-								} else {
-									Color c = frame->even_row_bg != Color(0, 0, 0, 0) ? frame->even_row_bg : even_row_bg;
-									if (c.a > 0.0) {
-										draw_rect(Rect2(p_ofs + rect.position + off + coff - frame->padding.position - Vector2(h_separation * 0.5, v_separation * 0.5).floor(), Size2(table->columns[col].width + h_separation + frame->padding.position.x + frame->padding.size.x, table->rows[row])), c, true);
-									}
-								}
-								Color bc = frame->border != Color(0, 0, 0, 0) ? frame->border : border;
-								if (bc.a > 0.0) {
-									draw_rect(Rect2(p_ofs + rect.position + off + coff - frame->padding.position - Vector2(h_separation * 0.5, v_separation * 0.5).floor(), Size2(table->columns[col].width + h_separation + frame->padding.position.x + frame->padding.size.x, table->rows[row])), bc, false);
-								}
-							}
-
-							for (int j = 0; j < (int)frame->lines.size(); j++) {
-								_draw_line(frame, j, p_ofs + rect.position + off + Vector2(0, frame->lines[j].offset.y), rect.size.x, p_base_color, p_outline_size, p_outline_color, p_font_shadow_color, p_shadow_outline_size, p_shadow_ofs, r_processed_glyphs);
-							}
-							idx++;
-						}
-					} break;
-					default:
-						break;
-				}
-			}
-		}
 
 		const Glyph *glyphs = TS->shaped_text_get_glyphs(rid);
 		int gl_size = TS->shaped_text_get_glyph_count(rid);
@@ -1007,6 +930,86 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 
 		int processed_glyphs_step = 0;
 		for (int step = DRAW_STEP_BACKGROUND; step < DRAW_STEP_MAX; step++) {
+			if (step == DRAW_STEP_TEXT) {
+				// Draw inlined objects.
+				Array objects = TS->shaped_text_get_objects(rid);
+				for (int i = 0; i < objects.size(); i++) {
+					Item *it = items.get_or_null(objects[i]);
+					if (it != nullptr) {
+						Vector2i obj_range = TS->shaped_text_get_object_range(rid, objects[i]);
+						if (trim_chars && l.char_offset + obj_range.y > visible_characters) {
+							continue;
+						}
+						if (trim_glyphs_ltr || trim_glyphs_rtl) {
+							int obj_glyph = r_processed_glyphs + TS->shaped_text_get_object_glyph(rid, objects[i]);
+							if ((trim_glyphs_ltr && (obj_glyph >= visible_glyphs)) || (trim_glyphs_rtl && (obj_glyph < total_glyphs - visible_glyphs))) {
+								continue;
+							}
+						}
+						Rect2 rect = TS->shaped_text_get_object_rect(rid, objects[i]);
+						switch (it->type) {
+							case ITEM_IMAGE: {
+								ItemImage *img = static_cast<ItemImage *>(it);
+								if (img->pad) {
+									Size2 pad_size = rect.size.min(img->image->get_size());
+									Vector2 pad_off = (rect.size - pad_size) / 2;
+									img->image->draw_rect(ci, Rect2(p_ofs + rect.position + off + pad_off, pad_size), false, img->color);
+								} else {
+									img->image->draw_rect(ci, Rect2(p_ofs + rect.position + off, rect.size), false, img->color);
+								}
+							} break;
+							case ITEM_TABLE: {
+								ItemTable *table = static_cast<ItemTable *>(it);
+								Color odd_row_bg = theme_cache.table_odd_row_bg;
+								Color even_row_bg = theme_cache.table_even_row_bg;
+								Color border = theme_cache.table_border;
+								float h_separation = theme_cache.table_h_separation;
+								float v_separation = theme_cache.table_v_separation;
+
+								int col_count = table->columns.size();
+								int row_count = table->rows.size();
+
+								int idx = 0;
+								for (Item *E : table->subitems) {
+									ItemFrame *frame = static_cast<ItemFrame *>(E);
+
+									int col = idx % col_count;
+									int row = idx / col_count;
+
+									if (frame->lines.size() != 0 && row < row_count) {
+										Vector2 coff = frame->lines[0].offset;
+										if (rtl) {
+											coff.x = rect.size.width - table->columns[col].width - coff.x;
+										}
+										if (row % 2 == 0) {
+											Color c = frame->odd_row_bg != Color(0, 0, 0, 0) ? frame->odd_row_bg : odd_row_bg;
+											if (c.a > 0.0) {
+												draw_rect(Rect2(p_ofs + rect.position + off + coff - frame->padding.position - Vector2(h_separation * 0.5, v_separation * 0.5).floor(), Size2(table->columns[col].width + h_separation + frame->padding.position.x + frame->padding.size.x, table->rows[row])), c, true);
+											}
+										} else {
+											Color c = frame->even_row_bg != Color(0, 0, 0, 0) ? frame->even_row_bg : even_row_bg;
+											if (c.a > 0.0) {
+												draw_rect(Rect2(p_ofs + rect.position + off + coff - frame->padding.position - Vector2(h_separation * 0.5, v_separation * 0.5).floor(), Size2(table->columns[col].width + h_separation + frame->padding.position.x + frame->padding.size.x, table->rows[row])), c, true);
+											}
+										}
+										Color bc = frame->border != Color(0, 0, 0, 0) ? frame->border : border;
+										if (bc.a > 0.0) {
+											draw_rect(Rect2(p_ofs + rect.position + off + coff - frame->padding.position - Vector2(h_separation * 0.5, v_separation * 0.5).floor(), Size2(table->columns[col].width + h_separation + frame->padding.position.x + frame->padding.size.x, table->rows[row])), bc, false);
+										}
+									}
+
+									for (int j = 0; j < (int)frame->lines.size(); j++) {
+										_draw_line(frame, j, p_ofs + rect.position + off + Vector2(0, frame->lines[j].offset.y), rect.size.x, p_base_color, p_outline_size, p_outline_color, p_font_shadow_color, p_shadow_outline_size, p_shadow_ofs, r_processed_glyphs);
+									}
+									idx++;
+								}
+							} break;
+							default:
+								break;
+						}
+					}
+				}
+			}
 			Vector2 off_step = off;
 			processed_glyphs_step = r_processed_glyphs;
 
@@ -1243,7 +1246,7 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 						} else if (item_fx->type == ITEM_RAINBOW) {
 							ItemRainbow *item_rainbow = static_cast<ItemRainbow *>(item_fx);
 
-							font_color = font_color.from_hsv(item_rainbow->frequency * (item_rainbow->elapsed_time + ((p_ofs.x + off_step.x) / 50)), item_rainbow->saturation, item_rainbow->value, font_color.a);
+							font_color = font_color.from_hsv(MAX(item_rainbow->frequency, 0) * ABS(item_rainbow->elapsed_time * item_rainbow->speed + ((p_ofs.x + off_step.x) / 50)), item_rainbow->saturation, item_rainbow->value, font_color.a);
 						} else if (item_fx->type == ITEM_PULSE) {
 							ItemPulse *item_pulse = static_cast<ItemPulse *>(item_fx);
 
@@ -1286,6 +1289,7 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 						bool skip = (trim_chars && l.char_offset + glyphs[i].end > visible_characters) || (trim_glyphs_ltr && (processed_glyphs_step >= visible_glyphs)) || (trim_glyphs_rtl && (processed_glyphs_step < total_glyphs - visible_glyphs));
 						if (!skip) {
 							if (txt_visible) {
+								has_visible_chars = true;
 								if (step == DRAW_STEP_TEXT) {
 									if (frid != RID()) {
 										TS->font_draw_glyph(frid, ci, glyphs[i].font_size, fx_offset + char_off, gl, font_color);
@@ -1365,6 +1369,13 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 				}
 			}
 			// Finish lines and boxes.
+			if (step == DRAW_STEP_BACKGROUND || step == DRAW_STEP_FOREGROUND) {
+				if (last_color.a > 0.0) {
+					Vector2 rect_off = p_ofs + Vector2(box_start - theme_cache.text_highlight_h_padding, off_step.y - l_ascent - theme_cache.text_highlight_v_padding);
+					Vector2 rect_size = Vector2(off_step.x - box_start + 2 * theme_cache.text_highlight_h_padding, l_size.y + 2 * theme_cache.text_highlight_v_padding);
+					RenderingServer::get_singleton()->canvas_item_add_rect(ci, Rect2(rect_off, rect_size), last_color);
+				}
+			}
 			if (step == DRAW_STEP_BACKGROUND) {
 				if (sel_start != -1) {
 					Color selection_bg = theme_cache.selection_color;
@@ -1373,13 +1384,6 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 						Rect2 rect = Rect2(sel[i].x + p_ofs.x + off.x, p_ofs.y + off.y - l_ascent, sel[i].y - sel[i].x, l_size.y); // Note: use "off" not "off_step", selection is relative to the line start.
 						RenderingServer::get_singleton()->canvas_item_add_rect(ci, rect, selection_bg);
 					}
-				}
-			}
-			if (step == DRAW_STEP_BACKGROUND || step == DRAW_STEP_FOREGROUND) {
-				if (last_color.a > 0.0) {
-					Vector2 rect_off = p_ofs + Vector2(box_start - theme_cache.text_highlight_h_padding, off_step.y - l_ascent - theme_cache.text_highlight_v_padding);
-					Vector2 rect_size = Vector2(off_step.x - box_start + 2 * theme_cache.text_highlight_h_padding, l_size.y + 2 * theme_cache.text_highlight_v_padding);
-					RenderingServer::get_singleton()->canvas_item_add_rect(ci, Rect2(rect_off, rect_size), last_color);
 				}
 			}
 			if (step == DRAW_STEP_TEXT) {
@@ -1406,6 +1410,10 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 
 		r_processed_glyphs = processed_glyphs_step;
 		off.y += TS->shaped_text_get_descent(rid);
+		if (has_visible_chars) {
+			line_count++;
+			has_visible_chars = false;
+		}
 	}
 
 	return line_count;
@@ -1893,10 +1901,12 @@ void RichTextLabel::_notification(int p_what) {
 			visible_paragraph_count = 0;
 			visible_line_count = 0;
 
+			// Bottom margin for text clipping.
+			float v_limit = theme_cache.normal_style->get_margin(SIDE_BOTTOM);
 			// New cache draw.
 			Point2 ofs = text_rect.get_position() + Vector2(0, main->lines[from_line].offset.y - vofs);
 			int processed_glyphs = 0;
-			while (ofs.y < size.height && from_line < to_line) {
+			while (ofs.y < size.height - v_limit && from_line < to_line) {
 				MutexLock lock(main->lines[from_line].text_buf->get_mutex());
 
 				visible_paragraph_count++;
@@ -3793,7 +3803,7 @@ void RichTextLabel::push_tornado(float p_frequency = 1.0f, float p_radius = 10.0
 	_add_item(item, true);
 }
 
-void RichTextLabel::push_rainbow(float p_saturation, float p_value, float p_frequency) {
+void RichTextLabel::push_rainbow(float p_saturation, float p_value, float p_frequency, float p_speed) {
 	_stop_thread();
 	MutexLock data_lock(data_mutex);
 
@@ -3801,6 +3811,7 @@ void RichTextLabel::push_rainbow(float p_saturation, float p_value, float p_freq
 	ItemRainbow *item = memnew(ItemRainbow);
 	item->owner = get_instance_id();
 	item->rid = items.make_rid(item);
+	item->speed = p_speed;
 	item->frequency = p_frequency;
 	item->saturation = p_saturation;
 	item->value = p_value;
@@ -5073,7 +5084,13 @@ void RichTextLabel::append_text(const String &p_bbcode) {
 				frequency = frequency_option->value.to_float();
 			}
 
-			push_rainbow(saturation, value, frequency);
+			float speed = 1.0f;
+			OptionMap::Iterator speed_option = bbcode_options.find("speed");
+			if (speed_option) {
+				speed = speed_option->value.to_float();
+			}
+
+			push_rainbow(saturation, value, frequency, speed);
 			pos = brk_end + 1;
 			tag_stack.push_front("rainbow");
 			set_process_internal(true);
