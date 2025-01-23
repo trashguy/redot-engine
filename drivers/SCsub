@@ -18,7 +18,9 @@ if env["platform"] == "windows":
         SConscript("backtrace/SCsub")
 if env["xaudio2"]:
     SConscript("xaudio2/SCsub")
-
+# Shared Apple platform drivers
+if env["platform"] in ["macos", "ios"]:
+    SConscript("apple/SCsub")
 # Midi drivers
 SConscript("alsamidi/SCsub")
 SConscript("coremidi/SCsub")

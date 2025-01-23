@@ -217,6 +217,9 @@ Error EditorExportPlatformWeb::_add_manifest_icon(const String &p_path, const St
 }
 
 Error EditorExportPlatformWeb::_build_pwa(const Ref<EditorExportPreset> &p_preset, const String p_path, const Vector<SharedObject> &p_shared_objects) {
+	List<String> preset_features;
+	get_preset_features(p_preset, &preset_features);
+
 	String proj_name = GLOBAL_GET("application/config/name");
 	if (proj_name.is_empty()) {
 		proj_name = "Redot Game";
